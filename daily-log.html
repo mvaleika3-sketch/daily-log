@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Daily Log"/>
+<title>Daily Log</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0f;
+    --surface: #171718;
+    --surface2: #1f1f21;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0ede8;
+    --muted: #888580;
+    --accent: #c8f564;
+    --accent2: #a8d94a;
+    --danger: #ff6b6b;
+    --success: #6bffb8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  #app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+  .screen.active { display: flex; }
+
+  /* ── SETUP SCREEN ── */
+  #setup {
+    padding: 48px 24px 32px;
+    overflow-y: auto;
+    gap: 32px;
+  }
+
+  .setup-header { }
+  .setup-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .setup-title {
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .setup-sub {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .setup-field { display: flex; flex-direction: column; gap: 8px; }
+  .setup-field label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .setup-field input, .setup-field select {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 14px 16px;
+    outline: none;
+    width: 100%;
+    -webkit-appearance: none;
+    transition: border-color 0.2s;
+  }
+  .setup-field input:focus, .setup-field select:focus {
+    border-color: var(--accent);
+  }
+  .setup-field .hint {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .setup-field .hint a { color: var(--accent); text-decoration: none; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0e0f;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 16px 24px;
+    width: 100%;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-primary:active { background: var(--accent2); transform: scale(0.98); }
+
+  /* ── MAIN LOG SCREEN ── */
+  #main {
+    overflow: hidden;
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .top-bar-left { display: flex; flex-direction: column; gap: 2px; }
+  .top-bar-day {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .top-bar-date {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .top-bar-right { display: flex; gap: 10px; align-items: center; }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .icon-btn:active { color: var(--text); border-color: var(--border2); }
+
+  /* ── LOG AREA ── */
+  .log-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 20px;
+  }
+
+  .log-textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.7;
+    resize: none;
+    padding: 20px 0 12px;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+  .log-textarea::placeholder { color: #3a3a3c; }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    padding: 12px 20px 32px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .day-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .day-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .day-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 6px 10px;
+    width: 64px;
+    outline: none;
+    -webkit-appearance: none;
+    text-align: center;
+  }
+  .day-input:focus { border-color: var(--accent); }
+
+  .send-btn {
+    background: var(--accent);
+    color: #0e0e0f;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 15px 24px;
+    width: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s, transform 0.1s, opacity 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .send-btn:disabled { opacity: 0.35; }
+  .send-btn:not(:disabled):active { background: var(--accent2); transform: scale(0.98); }
+
+  /* ── STATUS ── */
+  .status-bar {
+    min-height: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-align: center;
+    transition: color 0.3s, opacity 0.3s;
+    opacity: 0;
+  }
+  .status-bar.visible { opacity: 1; }
+  .status-bar.processing { color: var(--muted); }
+  .status-bar.success { color: var(--success); }
+  .status-bar.error { color: var(--danger); }
+
+  /* ── HISTORY PANEL ── */
+  #history {
+    overflow: hidden;
+  }
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .history-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .history-empty {
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+    margin-top: 60px;
+    font-family: var(--mono);
+  }
+
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .entry-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .entry-type {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: rgba(200,245,100,0.12);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .entry-day {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .entry-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #3a3a3c;
+    margin-left: auto;
+  }
+  .entry-content {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+  .entry-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+  }
+  .entry-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+  .entry-scores {
+    display: flex;
+    gap: 12px;
+  }
+  .entry-score {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .entry-score span { color: var(--text); }
+
+  /* spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #0e0e0f;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── SETUP SCREEN ── -->
+  <div class="screen active" id="setup">
+    <div class="setup-header">
+      <div class="setup-tag">Daily Log · Setup</div>
+      <div class="setup-title">Connect your<br/>logging system</div>
+      <div class="setup-sub">One-time setup. Your keys are stored only on this device.</div>
+    </div>
+
+    <div class="setup-field">
+      <label>Anthropic API Key</label>
+      <input type="password" id="setup-api-key" placeholder="sk-ant-api03-..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="hint">Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</div>
+    </div>
+
+    <div class="setup-field">
+      <label>Google Apps Script URL</label>
+      <input type="url" id="setup-script-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <div class="hint">From your Sheet → Extensions → Apps Script → Deploy → Web App URL</div>
+    </div>
+
+    <div class="setup-field">
+      <label>Starting Day Number</label>
+      <input type="number" id="setup-day" placeholder="23" value="23" min="1"/>
+      <div class="hint">You're on day 22 — set this to 23 for your next log.</div>
+    </div>
+
+    <button class="btn-primary" onclick="saveSetup()">Save &amp; Start Logging →</button>
+  </div>
+
+  <!-- ── MAIN SCREEN ── -->
+  <div class="screen" id="main">
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <div class="top-bar-day" id="display-day">Day —</div>
+        <div class="top-bar-date" id="display-date">—</div>
+      </div>
+      <div class="top-bar-right">
+        <div class="icon-btn" onclick="showHistory()" title="History">☰</div>
+        <div class="icon-btn" onclick="showSetup()" title="Settings">⚙</div>
+      </div>
+    </div>
+
+    <div class="log-area">
+      <textarea
+        class="log-textarea"
+        id="log-input"
+        placeholder="Just write. What did you do, how do you feel, what's the plan...&#10;&#10;Claude will handle the rest."
+        rows="1"
+      ></textarea>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="day-row">
+        <div class="day-label">Day #</div>
+        <input type="number" class="day-input" id="day-number" min="1" value="23"/>
+        <div class="status-bar" id="status-bar">—</div>
+      </div>
+      <button class="send-btn" id="send-btn" onclick="sendLog()">
+        <span id="send-label">Log it</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── HISTORY SCREEN ── -->
+  <div class="screen" id="history">
+    <div class="history-header">
+      <div class="history-title">Recent logs</div>
+      <div class="icon-btn" onclick="showMain()">✕</div>
+    </div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+</div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbySPM_NIH_d_Ki14QfRKJIPJyfIBguULCcRsuHpzJQenBCPWGPYPJKGqq1rasMiByHSrA/exec";
+
+// ── Storage helpers ──
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+function load(k, d) { try { const v = localStorage.getItem(k); return v != null ? JSON.parse(v) : d; } catch(e) { return d; } }
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  const apiKey = load('apiKey', '');
+  const scriptUrl = load('scriptUrl', '');
+  const dayNum = load('dayNum', 23);
+
+  if (apiKey && scriptUrl) {
+    document.getElementById('day-number').value = dayNum;
+    updateTopBar(dayNum);
+    showMain();
+  } else {
+    document.getElementById('setup-day').value = dayNum;
+    showScreen('setup');
+  }
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showMain() { showScreen('main'); updateTopBar(load('dayNum', 1)); }
+function showSetup() {
+  document.getElementById('setup-api-key').value = load('apiKey', '');
+  document.getElementById('setup-script-url').value = load('scriptUrl', '');
+  document.getElementById('setup-day').value = load('dayNum', 23);
+  showScreen('setup');
+}
+function showHistory() {
+  renderHistory();
+  showScreen('history');
+}
+
+function updateTopBar(day) {
+  document.getElementById('display-day').textContent = `Day ${day}`;
+  document.getElementById('display-date').textContent = new Date().toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short'
+  });
+  document.getElementById('day-number').value = day;
+}
+
+function saveSetup() {
+  const apiKey = document.getElementById('setup-api-key').value.trim();
+  const scriptUrl = document.getElementById('setup-script-url').value.trim();
+  const dayNum = parseInt(document.getElementById('setup-day').value) || 23;
+
+  if (!apiKey || !scriptUrl) {
+    alert('Please fill in both the API key and Script URL.');
+    return;
+  }
+  save('apiKey', apiKey);
+  save('scriptUrl', scriptUrl);
+  save('dayNum', dayNum);
+  updateTopBar(dayNum);
+  showMain();
+}
+
+// ── Status ──
+function setStatus(msg, type) {
+  const el = document.getElementById('status-bar');
+  el.textContent = msg;
+  el.className = `status-bar visible ${type}`;
+}
+function clearStatus() {
+  const el = document.getElementById('status-bar');
+  el.className = 'status-bar';
+}
+
+// ── Send ──
+async function sendLog() {
+  const text = document.getElementById('log-input').value.trim();
+  if (!text) return;
+
+  const apiKey = load('apiKey', '');
+  const scriptUrl = load('scriptUrl', SCRIPT_URL);
+  const dayNum = parseInt(document.getElementById('day-number').value) || load('dayNum', 1);
+
+  const btn = document.getElementById('send-btn');
+  const label = document.getElementById('send-label');
+  btn.disabled = true;
+  label.innerHTML = '<div class="spinner"></div> Parsing...';
+  setStatus('Sending to Claude...', 'processing');
+
+  try {
+    // ── Step 1: Claude parses the log ──
+    const prompt = `You are a structured logging assistant. Parse this personal daily log entry and return ONLY a valid JSON object with these exact fields:
+
+- logType: one of "task", "plan", "reflection", "mood", "adjustment", "mixed"
+- content: a clean, concise summary of the log (max 200 chars)
+- mood: integer 1-5 (1=very bad, 3=neutral, 5=excellent). Infer from tone if not stated. null if truly unclear.
+- energy: integer 1-5 (1=exhausted, 3=okay, 5=high energy). Infer from context. null if truly unclear.
+- tags: comma-separated relevant tags from: health, work, finance, habits, goals, social, learning, exercise, sleep, nutrition, mindset. Pick 1-3 most relevant.
+- notes: any specific plans, commitments, or follow-ups mentioned. Empty string if none.
+
+Return ONLY the JSON. No explanation, no markdown, no backticks.
+
+Log entry:
+"${text.replace(/"/g, '\\"')}"`;
+
+    const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!claudeRes.ok) {
+      const err = await claudeRes.json();
+      throw new Error(err.error?.message || 'Claude API error');
+    }
+
+    const claudeData = await claudeRes.json();
+    const rawJson = claudeData.content[0].text.trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(rawJson);
+    } catch(e) {
+      const match = rawJson.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+      else throw new Error('Could not parse Claude response');
+    }
+
+    setStatus('Saving to Sheets...', 'processing');
+    label.innerHTML = '<div class="spinner"></div> Saving...';
+
+    // ── Step 2: Send to Google Sheets ──
+    const row = {
+      timestamp: new Date().toISOString(),
+      day: dayNum,
+      logType: parsed.logType || '',
+      content: parsed.content || text.slice(0, 200),
+      mood: parsed.mood ?? '',
+      energy: parsed.energy ?? '',
+      tags: parsed.tags || '',
+      notes: parsed.notes || ''
+    };
+
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(row)
+    });
+
+    // ── Step 3: Save locally ──
+    const history = load('logHistory', []);
+    history.unshift({ ...row, raw: text, savedAt: Date.now() });
+    if (history.length > 100) history.pop();
+    save('logHistory', history);
+
+    // Advance day number for next session
+    save('dayNum', dayNum);
+
+    // ── Success ──
+    setStatus(`✓ Logged · ${parsed.logType} · mood ${parsed.mood ?? '?'} · energy ${parsed.energy ?? '?'}`, 'success');
+    document.getElementById('log-input').value = '';
+    btn.disabled = false;
+    label.textContent = 'Log it';
+    setTimeout(clearStatus, 4000);
+
+  } catch(err) {
+    setStatus(`✗ ${err.message}`, 'error');
+    btn.disabled = false;
+    label.textContent = 'Log it';
+  }
+}
+
+// ── History ──
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const history = load('logHistory', []);
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty">No logs yet.</div>';
+    return;
+  }
+  list.innerHTML = history.map(e => {
+    const time = new Date(e.savedAt || e.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(e.savedAt || e.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const tags = e.tags ? e.tags.split(',').map(t => `<span class="entry-tag">${t.trim()}</span>`).join('') : '';
+    const scores = (e.mood || e.energy) ? `
+      <div class="entry-scores">
+        ${e.mood ? `<div class="entry-score">mood <span>${e.mood}/5</span></div>` : ''}
+        ${e.energy ? `<div class="entry-score">energy <span>${e.energy}/5</span></div>` : ''}
+      </div>` : '';
+    return `
+      <div class="entry-card">
+        <div class="entry-meta">
+          <span class="entry-type">${e.logType || 'log'}</span>
+          <span class="entry-day">Day ${e.day}</span>
+          <span class="entry-time">${date} ${time}</span>
+        </div>
+        <div class="entry-content">${e.content || e.raw?.slice(0, 120) || ''}</div>
+        ${scores}
+        ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+// ── Day number sync ──
+document.addEventListener('DOMContentLoaded', () => {
+  const dayInput = document.getElementById('day-number');
+  if (dayInput) {
+    dayInput.addEventListener('change', () => {
+      const v = parseInt(dayInput.value);
+      if (v > 0) {
+        save('dayNum', v);
+        updateTopBar(v);
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
